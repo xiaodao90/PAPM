@@ -246,7 +246,7 @@ public class highChart extends HttpServlet{
 					JSONObject pid_obj = new JSONObject ();
 					JSONObject tid_obj = new JSONObject ();
 					int height = 0;
-					
+					int totalNum = 0;
 					for (int i=0; i < res.size(); i++)
 					{
 						HashMap hash = (HashMap)res.get(i);
@@ -277,11 +277,20 @@ public class highChart extends HttpServlet{
 							tid_list.put (tid_temp);
 						}
 					}
+					
+					totalNum = res.size();
+					res = dbm.executeSql("SELECT MIN(time) as min, MAX(time) as max FROM `"+exp_name+"_trace`, `"+exp_name+"_def` WHERE `"+exp_name+"_trace`.name = `"+exp_name+"_def`.fun_name AND `"+exp_name+"_def`.flag = 1;");
+					
+					long stime = Long.parseLong(((HashMap)res.get(0)).get("MIN").toString());
+					long etime = Long.parseLong(((HashMap)res.get(0)).get("MAX").toString());
+					long totalTime = etime - stime;
+					
 					if (exp_type.equals("mpi"))
 					{
 						pid_obj.put("pid", pid_list);
 						pid_obj.put("rank", rank_list);
-						pid_obj.put("num", res.size());
+						pid_obj.put("num", totalNum);
+						pid_obj.put("totalTime", totalTime);
 						trace_data.put(pid_obj);
 					}				
 					if (exp_type.equals("ompi"))
@@ -289,13 +298,15 @@ public class highChart extends HttpServlet{
 						tid_obj.put("num", height);
 						tid_obj.put("omp_rank", omp_rank_list);
 						tid_obj.put("tid", tid_list);
+						tid_obj.put("totalTime", totalTime);
 						trace_data.put(tid_obj);
 					}
 					else if (exp_type.equals("cmpi"))
 					{
 						pid_obj.put("pid", pid_list);
 						pid_obj.put("rank", rank_list);
-						pid_obj.put("num", res.size());
+						pid_obj.put("num", totalNum);
+						pid_obj.put("totalTime", totalTime);
 						trace_data.put(pid_obj);
 					}
 					
@@ -311,9 +322,6 @@ public class highChart extends HttpServlet{
 						func[i] = hash.get("NAME").toString();
 						color[i] = hash.get("COLOR").toString();
 					}
-					res = dbm.executeSql("SELECT MIN(time) as min, MAX(time) as max FROM `"+exp_name+"_trace`, `"+exp_name+"_def` WHERE `"+exp_name+"_trace`.name = `"+exp_name+"_def`.fun_name AND `"+exp_name+"_def`.flag = 1;");
-					
-					long stime = Long.parseLong(((HashMap)res.get(0)).get("MIN").toString());
 					
 					//Get Process trace data
 					for (int i = 0; i < e_length; i++)
@@ -366,8 +374,10 @@ public class highChart extends HttpServlet{
 								temp2.put("y", height - pid_map.get(pid_temp));
 			
 							temp1.put("time", (etime_temp - stime_temp)/1000);
+							temp1.put("tag", 1);
 							temp2.put("time", (etime_temp - stime_temp)/1000);
 							data_temp.put(temp1);
+							temp2.put("tag", 2);
 							data_temp.put(temp2);
 							
 							temp3.put("x", (etime_temp - stime)/1000.0);

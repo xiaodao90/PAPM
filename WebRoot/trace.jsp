@@ -31,7 +31,7 @@
 	{
 		$("#head").append("<div><h6 style='font-size:14px;width:auto;margin-left:15px;display:inline;'>显示类型:</h6><select id='trace_type'  style='font-size:14px' onchange=sel_type(this.value)><option value='rank'>按rank显示</option><option value='pid'>按pid显示</option></select><button id='comm_line' class='button' style='display:inline;margin-left:10px;' value=0 onclick='comm_line()'>显示通信线</button></div>");
 	}
-
+	var totalTime = 0;
  	var rank_num;
  	var data_num;
  	var trace_data;
@@ -46,6 +46,7 @@
 		$.getJSON("servlet/highchart?req_type=get_trace_data",function(result){
 			trace_data = result;
 			rank_num = trace_data[0]["num"];
+			totalTime = trace_data[0]["totalTime"];
 			
 			if (exp_type != "omp")
 			{
@@ -66,7 +67,7 @@
 
 	function draw()
 	{
-		var min=0,max=0;
+		var min=0,max=totalTime;
 		var options = {
 		    chart: {
 		        renderTo:'trace_graph',
@@ -75,13 +76,17 @@
 		        zoomType: 'x',
 		        marginTop: 50,
 		        events: {
-		             selection: function(event) {
-		                  var extremesObject = event.xAxis[0];
-		                     min = extremesObject.min;
-		                     max = extremesObject.max;
-		                     alert (min)
-		               }
-		            },
+					redraw: function(event) {
+						min = this.xAxis[0].getExtremes().min;				
+						
+						if (min == 0)											//set all the datalabels to empty when min =0
+						{
+							$('.datalabel').each(function(i,label){
+								$(this).text("");
+							});
+						}
+					}
+				},
 		    },
 		    title:{text:''},
 	    	credits:{enabled:false},
@@ -90,10 +95,10 @@
 		        	if (exp_type == "omp")
 		        		return "task_id:"+this.series.name;
 		        	else
-		          		return this.point.pid+"<br/>func_name:"+this.point.name+"<br/>x:"+this.x+";<br/>y:"+this.y+"<br/>time:"+this.point.time;
+		          		return "func_name:"+this.series.name+"<br/>x:"+this.x+";<br/>y:"+this.y+"<br/>time:"+this.point.time;
 		        }
 		    },
-			plotOptions: { 
+			plotOptions: {
 		        series: {
 		            shadow:false,
 		            color:'rgba(24,90,169,.75)',
@@ -101,9 +106,17 @@
 		           	dataLabels: {
 	                	align: 'left',
 	                	enabled: true,
-	                	formatter: function() {
-	                		
-	                		return this.series.name;
+	                	useHTML:true,
+	                	y:5,
+	                	formatter: function(event) {
+	                		var extremesObject = chart.xAxis[0].getExtremes();
+	    					min = extremesObject.min;
+	    					max = extremesObject.max;
+	    					
+	                		if ((((max - min) / this.point.time) < 15) && this.point.x >= min && this.point.x <= max && this.point.tag == 1)
+	                			return '<span class="datalabel" id="dl'+this.point.x+'">' + this.series.name + '</span>';
+	                		else
+	                			return ;
 	                	}
 	              	},
 		            marker:{
@@ -300,7 +313,7 @@
 			$("#comm_line").val(0);
 			$("#comm_line").html ("显示通信线");
 		}
+		
 	}
-</script>
-
+</script>​
 </html>
