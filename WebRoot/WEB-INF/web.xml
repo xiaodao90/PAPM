@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.0" 
+	xmlns="http://java.sun.com/xml/ns/javaee" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+	http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
+  <display-name></display-name>	
+  <welcome-file-list>
+    <welcome-file>login.jsp</welcome-file>
+  </welcome-file-list>
+  
+  <session-config>
+  	<session-timeout>30</session-timeout>
+  </session-config>
+  
+  <!-- *******************    filter   ******************** -->
+  <filter>
+  	<filter-name>page_filter</filter-name>
+  	<filter-class>user_manager.page_filter</filter-class>
+  </filter>
+  
+  <filter-mapping>
+  	<filter-name>page_filter</filter-name>
+  	<url-pattern>*.html</url-pattern>
+  </filter-mapping> 
+  <filter-mapping>
+  	<filter-name>page_filter</filter-name>
+  	<url-pattern>*.jsp</url-pattern>
+  </filter-mapping> 
+  
+  
+  <!--********************** servlet class *******************-->
+  <servlet>
+    <servlet-name>ServletDemo2ChartGenerator</servlet-name>
+    <servlet-class>demo.ServletDemo2ChartGenerator</servlet-class>
+  </servlet> 
+  
+  <servlet>
+  	<servlet-name>ServletDemo2</servlet-name>
+  	<servlet-class>demo.ServletDemo2</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>HighChartTest</servlet-name>
+  	<servlet-class>user_manager.highChart</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>login_check</servlet-name>
+  	<servlet-class>user_manager.login_check</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>exp_manage</servlet-name>
+  	<servlet-class>user_manager.exp_manage</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>user_manage</servlet-name>
+  	<servlet-class>user_manager.user_manage</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>function_classify</servlet-name>
+  	<servlet-class>user_manager.function_classify</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>function_display</servlet-name>
+  	<servlet-class>user_manager.function_display</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>exp_info</servlet-name>
+  	<servlet-class>user_manager.exp_info</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>chart_generator</servlet-name>
+  	<servlet-class>graph.ChartGenerator</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>trace2profile</servlet-name>
+  	<servlet-class>user_manager.exp_manage</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>trace2tree</servlet-name>
+  	<servlet-class>user_manager.exp_manage</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>pretreatment</servlet-name>
+  	<servlet-class>user_manager.exp_manage</servlet-class>
+  </servlet>
+  
+  <servlet>
+  	<servlet-name>protovis_chart</servlet-name>
+  	<servlet-class>user_manager.protovisChart</servlet-class>
+  </servlet>
+  
+  
+  
+  <!--************************Device manage servlet***************-->
+  
+  <servlet>
+  	<servlet-name>device_manage</servlet-name>
+  	<servlet-class>user_manager.device_manage</servlet-class>
+  </servlet>
+  
+  <!--*********************Highcharts exporter servlet*************-->
+  <servlet>
+  	<servlet-name>highcharts_export</servlet-name>
+  	<servlet-class>user_manager.HighChartsServlet</servlet-class>
+  	<load-on-startup>10</load-on-startup>
+  </servlet> 
+	
+  <!--********************** servlet mapping ***********************-->
+  <servlet-mapping>
+	<servlet-name>ServletDemo2ChartGenerator</servlet-name>
+    <url-pattern>/servlet/ServletDemo2ChartGenerator</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>ServletDemo2</servlet-name>
+  	<url-pattern>/servlet/ServletDemo2</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>HighChartTest</servlet-name>
+  	<url-pattern>/servlet/highchart</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>login_check</servlet-name>
+  	<url-pattern>/servlet/LoginCheck</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>exp_manage</servlet-name>
+  	<url-pattern>/servlet/Get_setime</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>exp_manage</servlet-name>
+  	<url-pattern>/servlet/Get_experiment</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>exp_manage</servlet-name>
+  	<url-pattern>/servlet/Select_experiment</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>exp_manage</servlet-name>
+  	<url-pattern>/servlet/Delete_experiment</url-pattern>
+  </servlet-mapping>
+  
+  
+  <servlet-mapping>
+  	<servlet-name>user_manage</servlet-name>
+  	<url-pattern>/servlet/Get_user</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>user_manage</servlet-name>
+  	<url-pattern>/servlet/Delete_user</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>user_manage</servlet-name>
+  	<url-pattern>/servlet/Modify</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>user_manage</servlet-name>
+  	<url-pattern>/servlet/Add_user</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>function_classify</servlet-name>
+  	<url-pattern>/servlet/Get_cat</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>function_classify</servlet-name>
+  	<url-pattern>/servlet/Modify_cat</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>function_classify</servlet-name>
+  	<url-pattern>/servlet/Add_cat</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>function_display</servlet-name>
+  	<url-pattern>/servlet/Func_dis</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>function_display</servlet-name>
+  	<url-pattern>/servlet/Add_dis</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>exp_info</servlet-name>
+  	<url-pattern>/servlet/Get_exp_info</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>chart_generator</servlet-name>
+  	<url-pattern>/servlet/Get_chart</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>highcharts_export</servlet-name>
+  	<url-pattern>/servlet/Highcharts_export</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>trace2profile</servlet-name>
+  	<url-pattern>/servlet/Trace2Profile</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>trace2tree</servlet-name>
+  	<url-pattern>/servlet/Trace2Tree</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>pretreatment</servlet-name>
+  	<url-pattern>/servlet/PreTreatment</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>protovis_chart</servlet-name>
+  	<url-pattern>/servlet/Protovis_chart</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+  	<servlet-name>device_manage</servlet-name>
+  	<url-pattern>/servlet/Device_manage</url-pattern>
+  </servlet-mapping>
+  
+</web-app>

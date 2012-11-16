@@ -1,0 +1,11 @@
+#head
+{
+	position: fixed; 
+	top:0px;
+	z-index:4;
+	width:100%;
+	background: url('../../lib/ligerUI/skins/Aqua/images/panel/panel-menu.gif') repeat-x;
+	height: 24px;
+	border: 1px solid #ADBED6;
+	border-top: 1px solid #EFF7F7;
+}

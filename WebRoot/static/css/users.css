@@ -1,0 +1,5 @@
+#header{width:960px; height:100px; margin:0 auto; text-align:center;background-color:#5887FF;}
+#main{width:960px;margin:0 auto;}
+.item_rect{position:relative;width:180px;height:180px; margin:6px 6px;background-color:#FF7CA5;float:left;text-align:center;}
+.item_rect p{font-size:16px;}
+
