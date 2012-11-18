@@ -17,6 +17,7 @@
 
 <body>
 	<div id="head">
+		<h6 style='font-size:14px;width:auto;display:inline;margin-left:15px'>Trace图</h6>
 	</div>
 	<div id="image" style="margin-top:28px;">
 		<form id="form" align="center" layoutH="42">
@@ -29,45 +30,57 @@
 	var exp_type = "<%=session.getAttribute("exp_type").toString()%>";
 	if (exp_type != "omp")
 	{
-		$("#head").append("<div><h6 style='font-size:14px;width:auto;margin-left:15px;display:inline;'>显示类型:</h6><select id='trace_type'  style='font-size:14px' onchange=sel_type(this.value)><option value='rank'>按rank显示</option><option value='pid'>按pid显示</option></select><button id='comm_line' class='button' style='display:inline;margin-left:10px;' value=0 onclick='comm_line()'>显示通信线</button></div>");
+		$("#head").append("<button id='comm_line' class='button' style='float:right;display:inline;margin-right:10px;' value=0 onclick='comm_line()'>显示通信线</button>");
 	}
+	else
+	{
+		$("#head").append("<button id='disMode' class='button' style='float:right;display:inline;margin-right:10px;' value=0 onclick='disMode()'>显示函数</button>");
+	}
+	
 	var totalTime = 0;
- 	var rank_num;
+ 	var totalNum;
  	var data_num;
- 	var trace_data;
+ 	var traceData;
  	var chart;
- 	var Y_Categories_pid;
- 	var Y_Categories_rank;
- 	var Y_Categories_thread;
+ 	var Y_Categories;
+ 	var Y_title;
+ 	
+ 	if (exp_type == "mpi")
+ 		Y_title = "MPI_Rank";
+ 	else if (exp_type == "ompi")
+ 		Y_title = "OMPI_Rank";
+ 	else if (exp_type == "omp")
+ 		Y_title = "OMP_Thread";
+ 	else 
+ 		Y_title = "MPI_Rank";
+ 	
  	var comm_data = {
        	data:[]
 	};
+ 	
 	$(document).ready(function(){
 		$.getJSON("servlet/highchart?req_type=get_trace_data",function(result){
-			trace_data = result;
-			rank_num = trace_data[0]["num"];
-			totalTime = trace_data[0]["totalTime"];
+			traceData = result;
+	
+			totalNum = traceData[0]["num"];
+			totalTime = traceData[0]["totalTime"];
 			
 			if (exp_type != "omp")
 			{
-				data_num = trace_data.length;
-				comm_data.name = trace_data[data_num -1]["name"];
-				comm_data.color = trace_data[data_num - 1]["color"];
+				data_num = traceData.length;
+				comm_data.name = traceData[data_num -1]["name"];
+				comm_data.color = traceData[data_num - 1]["color"];
 				comm_data.lineWidth = 1;
-				comm_data.data = trace_data[data_num - 1]["data"];
+				comm_data.data = traceData[data_num - 1]["data"];
 			}
-
-			draw();
-			if (exp_type == "omp")
-				sel_type ("omp_thread");
-			else 
-				sel_type ("rank");
+			
+			draw ();
 		});
 	});
 
 	function draw()
 	{
-		var min=0,max=totalTime;
+		var min=0, max=totalTime;
 		var options = {
 		    chart: {
 		        renderTo:'trace_graph',
@@ -93,7 +106,7 @@
 		    tooltip:{
 		        formatter:function(){
 		        	if (exp_type == "omp")
-		        		return "task_id:"+this.series.name;
+		        		return "task_id:"+this.series.name+"<br/>TASK_State:"+this.point.status+"<br/>Fun_name:"+this.point.funName;
 		        	else
 		          		return "func_name:"+this.series.name+"<br/>x:"+this.x+";<br/>y:"+this.y+"<br/>time:"+this.point.time;
 		        }
@@ -121,7 +134,7 @@
 	              	},
 		            marker:{
 		                symbol:'diamond',
-		                radius:0.2,
+		                radius:2,
 		                lineWidth:1,
 		                states:{
 		                    hover:{
@@ -133,7 +146,6 @@
 		        }
 		    },
 		    yAxis:{
-		    	endOnTick: false,
 		    	minorTickInterval: 'auto',
      			maxPadding: 0.2,
             	gridLineWidth: 2,
@@ -143,7 +155,7 @@
 	            tickmarkPlacement:'on',
 		    	categories: [],
 		        title:{
-		            text:"Rank"
+		            text:Y_title
 		        },
 		        gridLineWidth:1,
 	            gridLineColor:'#ddd',
@@ -161,7 +173,6 @@
 		        maxPadding:0,
 		  		min:0,
 		        minorTickInterval:60 * 15 * 1000,
-		       
 		        lineColor:'#999',
 		        lineWidth:1,
 		        tickColor:'#999',
@@ -178,7 +189,6 @@
 		        endOnTick:true,
 		        showFirstLabel:true,
 		        showLastLabel:true,
-	
 		    },
 		    exporting: {
 	            enabled: true,
@@ -189,25 +199,25 @@
 		chart  = new Highcharts.Chart(options);
 		chart.showLoading('Loading data from server...');
 		
-    	$.each (trace_data,function(i,temp)
+    	$.each (traceData,function(i,temp)
     	{
     		if (exp_type == "omp")
     		{
     			if (i == 0)
     			{
-    				Y_Categories_thread = temp["thread"];
-        			Y_Categories_thread.reverse();
+    				Y_Categories = temp ["thread"];
+        			Y_Categories.reverse();
+        			options.yAxis.categories = Y_Categories;
     			}
     			else 
     			{
 					var series = {
 						data:[]
        	            };
-                   	series.name = temp["task_id"];
-					if (temp["name"] == "LDMC_Application" || temp["name"] == "main()")
-                   		series.lineWidth = 18;
-                   	series.data = temp["data"];
-                   	options.series.push(series);
+                   	series.name = temp ["task_id"];
+                   	series.color = temp["color"];
+                   	series.data = temp ["data"];
+                   	options.series.push(series); 
     			}
     		}
     		else 
@@ -216,26 +226,26 @@
         		{
         			if (exp_type == "mpi")
         			{
-            			Y_Categories_pid = temp["pid"];
-            			Y_Categories_rank = temp["rank"];
-            			Y_Categories_pid.reverse();
-            			Y_Categories_rank.reverse();
+            			Y_Categories = temp["rank"];
+            			Y_Categories.reverse();
+            			options.yAxis.categories = Y_Categories;
         			}
         			else if (exp_type == "ompi")
         			{
         				Y_Categories_rank = [];
             			$.each (temp["omp_rank"], function(j, omp_rank){
-            				Y_Categories_rank.push(j);
+            				Y_Categories.push(j);
             				$.each(omp_rank, function (k, data){
-            					Y_Categories_rank.push(j+":"+data);
+            					Y_Categories.push(j+":"+data);
             				});
-            			});
-            			Y_Categories_rank.reverse();
+            			});	
+            			Y_Categories.reverse();
+            			options.yAxis.categories = Y_Categories;
         			}
         			else if (exp_type == "cmpi")
         			{
-        				Y_Categories_pid = temp["pid"];
-            			Y_Categories_rank = temp["rank"];
+            			Y_Categories = temp["rank"];
+            			options.yAxis.categories = Y_Categories;
         			}
         		}
         		else if (i < data_num -1 )
@@ -260,44 +270,19 @@
 
   		options.plotOptions.series.lineWidth = 15;
 
-    	options.yAxis.max = rank_num;
+    	options.yAxis.max = totalNum;
 
-    	if (rank_num < 4)
+    	if (totalNum < 4)
     		options.chart.height = 250;
-    	else if (rank_num >= 4 && rank_num <= 8)
+    	else if (totalNum >= 4 && totalNum <= 8)
     		options.chart.height = 400;
-    	else if (rank_num > 8 && rank_num <= 12)
+    	else if (totalNum > 8 && totalNum <= 12)
     		options.chart.height = 550;
     	else
-    		options.chart.height = 35 * rank_num + 50;
+    		options.chart.height = 35 * totalNum + 50;
     	chart = new Highcharts.Chart(options);
 	}
 	
-	function sel_type (value)
-	{
-		if (value == "pid")
-		{
-			chart.yAxis[0].setCategories(Y_Categories_pid);
-			chart.yAxis[0].setTitle({
-				text: 'Pid'
-			});
-		}
-		else if (value == "rank")
-		{
-			chart.yAxis[0].setCategories(Y_Categories_rank);
-			chart.yAxis[0].setTitle({
-				text: 'Rank'
-			});
-		}
-		else if (value == "omp_thread")
-		{
-			chart.yAxis[0].setCategories(Y_Categories_thread);
-			chart.yAxis[0].setTitle({
-				text: 'OMP_Thread'
-			});
-		}
-		
-	}
 	
 	function comm_line ()
 	{
@@ -313,7 +298,20 @@
 			$("#comm_line").val(0);
 			$("#comm_line").html ("显示通信线");
 		}
-		
+	}
+	
+	function disMode ()
+	{
+		if ($("#disMode").val() == 0)
+		{
+			$("#disMode").val(1);
+			$("#disMode").html ("显示函数");
+		}
+		else
+		{
+			$("#disMode").val(1);
+			$("#disMode").html ("显示任务");
+		}
 	}
 </script>​
 </html>

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 
@@ -153,49 +154,76 @@ public class highChart extends HttpServlet{
 					DFT (threads, flag, threads_temp, -1, -1, maxLevel, 0);
 					for (int i = 0; i < threadsNum; ++i)
 					{
-						String temp = threads[i].omp_level +":" + threads[i].omp_rank;
+						String temp = "[" + threads[i].omp_p_rank + "]" + threads[i].omp_level +":" + threads[i].omp_rank;
 						threadData.put(temp);
-					//	System.out.println(temp);
 					}
 					threadObj.put("thread", threadData);
 					threadObj.put("num", threadsNum);
 					traceData.put(threadObj);
 					
 					//get the start time of this experiment
-					res = dbm.executeSql("SELECT MIN(time) as MIN FROM `"+exp_name+"_trace` ;");
+					res = dbm.executeSql("SELECT MIN(time) as MIN FROM `"+exp_name+"_trace` WHERE task_id!='ffffffffffffffff';");
 					sTime = Long.parseLong(((HashMap)res.get(0)).get("MIN").toString());
 					
-					//get task id 
-					res = dbm.executeSql("SELECT DISTINCT task_id FROM `"+exp_name+"_trace` WHERE task_id!='ffffffffffffffff';");
-					String taskId[] = new String [res.size()];
+					//get task id
+					res = dbm.executeSql("SELECT DISTINCT task_id FROM `"+exp_name+"_trace` WHERE task_id!='ffffffffffffffff' ORDER BY task_id;");
+					String taskId[][] = new String [res.size()][];
 					int taskNum = res.size();
 					for (int i = 0; i < taskNum; ++i)
-						taskId [i] = ((HashMap)res.get(i)).get("TASK_ID").toString();
+					{
+						taskId [i] = new String [2];
+						taskId [i][0] = ((HashMap)res.get(i)).get("TASK_ID").toString();
+						taskId [i][1] = "Task" + i;
+						System.out.println(taskId[i][0]+"--"+taskId[i][1]);
+					}
 					
 					for (int i = 0; i < taskNum; ++i)
 					{
 						JSONObject taskObj = new JSONObject ();
+						JSONObject nullData = null;
 						JSONArray data = new JSONArray ();
-						res = dbm.executeSql("SELECT * FROM `"+exp_name+"_trace` WHERE task_id='"+taskId[i]+"';");
+						int lastLevel = -1, lastHeight = 0;
+						String lastFunName = new String ();
+						String lastStatus = new String ();
+						res = dbm.executeSql("SELECT * FROM `"+exp_name+"_trace` WHERE task_id='"+taskId[i][0]+"' ORDER BY time;");
 						for (int j = 0; j < res.size(); ++j)
 						{
 							JSONObject temp = new JSONObject ();
 							
 							HashMap hash = (HashMap)res.get(j);
 							long time = Long.parseLong(hash.get("TIME").toString());
-							int omp_rank = Integer.parseInt(hash.get("OMP_RANK").toString());
-							int omp_level = Integer.parseInt(hash.get("OMP_LEVEL").toString());
-							int omp_p_rank = Integer.parseInt(hash.get("OMP_P_RANK").toString());
-							int height = getHeight (threads, omp_level, omp_rank, omp_p_rank);
+							int ompRank = Integer.parseInt(hash.get("OMP_RANK").toString());
+							int ompLevel = Integer.parseInt(hash.get("OMP_LEVEL").toString());
+							int ompPRank = Integer.parseInt(hash.get("OMP_P_RANK").toString());
+							int height = getHeight (threads, ompLevel, ompRank, ompPRank);
+							
+							if (ompLevel != lastLevel)
+							{
+								JSONObject temp1 = new JSONObject ();
+								temp1.put("x", (time - sTime)/1000);
+								temp1.put("y", lastHeight);
+								temp1.put("status", lastStatus);
+								temp1.put("funName", lastFunName);
+								data.put(temp1);
+								data.put(nullData);
+							}
 							
 							temp.put("x", (time - sTime)/1000);
 							temp.put("y", height);
+							temp.put("status", hash.get("TASK_STATE").toString());
+							temp.put("funName", hash.get("NAME").toString());
 							data.put(temp);
+							lastLevel = ompLevel;
+							lastHeight = height;
+							lastStatus = hash.get("TASK_STATE").toString();
+							lastFunName = hash.get("NAME").toString();
 						}
 						taskObj.put("data", data);
-						taskObj.put("task_id", taskId[i]);
+						taskObj.put("task_id", taskId[i][1]);
+						taskObj.put("color", getRandomColor ());
 						traceData.put(taskObj);
 					}
+	
 					System.out.println(traceData.toString());
 					out.write(traceData.toString());
 					/*for (int i = 0; i < threadsNum; ++i)
@@ -1266,7 +1294,18 @@ public class highChart extends HttpServlet{
 				height = threads.length - i - 1;
 			}
 		}
-		
 		return height;
+	}
+	
+	public String getRandomColor ()
+	{
+		int red,green,blue,color;
+		Random random = new Random();
+		red=Math.abs(random.nextInt())%255;
+		green=Math.abs(random.nextInt())%255;
+		blue=Math.abs(random.nextInt())%255;
+			
+		System.out.println(Integer.toHexString(blue*65535+green*255+red));
+		return "#"+Integer.toHexString(blue*65535+green*255+red).toUpperCase();
 	}
 }

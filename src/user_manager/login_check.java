@@ -69,7 +69,7 @@ public class login_check extends HttpServlet{
 		}
 		catch (Exception e) {
 			System.err.println(e.toString());
-			}	
+		}	
 	}
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 	        throws ServletException, IOException {

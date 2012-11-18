@@ -162,8 +162,9 @@ public class exp_manage extends HttpServlet{
 				JSONObject res = new JSONObject ();
 				HttpSession session = request.getSession();
 				String exp_name = request.getParameter("exp_name");
-				trace2profile (exp_name);								//trace 转 profile
-				trace2tree (exp_name);									//trace 转tree
+				String exp_type = session.getAttribute("exp_type").toString();
+				trace2profile (exp_name, exp_type);								//trace 转 profile
+				trace2tree (exp_name);											//trace 转tree
 				session.setAttribute("profile", 1);
 				session.setAttribute("tree", 1);
 				res.put("result", "success");
@@ -174,7 +175,8 @@ public class exp_manage extends HttpServlet{
 				JSONObject res = new JSONObject ();
 				HttpSession session = request.getSession();
 				String exp_name = request.getParameter("exp_name");
-				trace2profile (exp_name);								//trace 转 profile
+				String exp_type = session.getAttribute("exp_type").toString();
+				trace2profile (exp_name, exp_type);								//trace 转 profile
 				session.setAttribute("profile", 1);
 				res.put("result", "success");
 				out.write(res.toString());
@@ -184,7 +186,7 @@ public class exp_manage extends HttpServlet{
 				JSONObject res = new JSONObject ();
 				HttpSession session = request.getSession();
 				String exp_name = request.getParameter("exp_name");
-				trace2tree (exp_name);									//trace 转tree
+				trace2tree (exp_name);											//trace 转tree
 				session.setAttribute("tree", 1);
 				res.put("result", "success");
 				out.write(res.toString());
@@ -324,22 +326,35 @@ public class exp_manage extends HttpServlet{
 		return "#"+Integer.toHexString(blue*65535+green*255+red).toUpperCase();
 	}
 	
-	private void trace2profile(String exp_name) throws Exception
+	private void trace2profile(String exp_name, String exp_type) throws Exception
 	{
 		DBManager dbm = new DBManager();
 
 		dbm.executeUpdate("DROP PROCEDURE IF EXISTS `t2f_"+exp_name+"`");
-		dbm.executeUpdate("drop table if exists `"+exp_name+"_profile`");
-		String procedure = "CREATE PROCEDURE `t2f_"+exp_name+"`()\n"+
-							"BEGIN\n"+
-							"DROP TABLE IF EXISTS `"+exp_name+"_profile`;\n"+
-							"CREATE TABLE `"+exp_name+"_profile` (id INT AUTO_INCREMENT,pid INT, hostname text, eid INT, name text, sumTime BIGINT DEFAULT 0, cnt INT DEFAULT 0, PRIMARY KEY (id));\n"+
-							"INSERT INTO `"+exp_name+"_profile` (pid,hostname,eid,name,sumTime,cnt) SELECT pid,hostname,eid,name,SUM(CASE WHEN finish=1 THEN -time ELSE time END),COUNT(finish)>>1 FROM `"+exp_name+"_trace`  GROUP BY pid,eid ORDER BY eid ;\n"+
-							"END";
+		
+		String procedure = new String ();
+		if (!exp_type.equals("omp"))
+		{
+			procedure = "CREATE PROCEDURE `t2f_"+exp_name+"`()\n"+
+					"BEGIN\n"+
+					"DROP TABLE IF EXISTS `"+exp_name+"_profile`;\n"+
+					"CREATE TABLE `"+exp_name+"_profile` (id INT AUTO_INCREMENT,pid INT, hostname text, eid INT, name text, sumTime BIGINT DEFAULT 0, cnt INT DEFAULT 0, PRIMARY KEY (id));\n"+
+					"INSERT INTO `"+exp_name+"_profile` (pid,hostname,eid,name,sumTime,cnt) SELECT pid,hostname,eid,name,SUM(CASE WHEN finish=1 THEN -time ELSE time END),COUNT(finish)>>1 FROM `"+exp_name+"_trace`  GROUP BY pid,eid ORDER BY eid ;\n"+
+					"END";
+		}
+		else
+		{
+			procedure  = "CREATE PROCEDURE IF EXISTS 't2f_"+ exp_name +"'"+
+					"BEGIN\n"+
+					"DROP TABLE IF EXISTS `"+exp_name+"_profile`;\n"+
+					"END";
+		}
+
 		dbm.executeUpdate(procedure);
 		
 		dbm.executeUpdate("CALL `t2f_"+exp_name+"`");
 		dbm.executeUpdate("DROP PROCEDURE IF EXISTS `t2f_"+exp_name+"`");
+		
 		System.out.println("trace to profile success");
 	}
 	
@@ -372,7 +387,7 @@ public class exp_manage extends HttpServlet{
             		"  `eid` int(11) default NULL,"+
             		" PRIMARY KEY  (`id`));"; 
             db.executeUpdate(sql1); 
-            String[] ranknum = new String [list0.size()]; //an array to contain ranks 
+            String[] ranknum = new String [list0.size()]; 			//an array to contain ranks 
             String[] pidnum = new String[list0.size()];
             String[] hostnamenum = new String[list0.size()];
             for(int i=0;i<list0.size();i++)
@@ -384,41 +399,39 @@ public class exp_manage extends HttpServlet{
 	        	ranknum[i]=rank;
 	        	pidnum[i] = pid;
 	        	hostnamenum[i]=hostname;
-	        	//System.out.println(rank);
             }
       
 	        ArrayList tree_stack=new ArrayList();
-	        for (int i=0;i<list0.size();i++){ 
-	        	//System.out.println("out");
+	        for (int i=0;i<list0.size();i++)
+	        { 
 	        	String rank=ranknum[i];
 	        	String pid=pidnum[i];
 	        	String hostname = hostnamenum[i];
 	        	String sql2="select  eid, time, finish,name from `"+tableName+"` where pid='"+pid+"' and hostname = '"+hostname+"' order by time";
-	        //	System.out.println(sql2);
 	        	ArrayList list1 = new ArrayList ();
-	        	list1=db.executeSql(sql2); //选一个进程的信息
-	        	for(int j=0;j<list1.size();j++)      //遍历这个进程的数据 j
+	        	list1=db.executeSql(sql2); 							//选一个进程的信息
+	        	for(int j=0;j<list1.size();j++)      				//遍历这个进程的数据 j
 	        	{
-	        		//System.out.println(i);
 	        		HashMap hash=(HashMap)list1.get(j);
             		int eid=Integer.parseInt(hash.get("EID").toString());
             		String name=hash.get("NAME").toString();
             		int finish=Integer.parseInt(hash.get("FINISH").toString());
             		int count=0;
               		int father=0;
-              		//System.out.println("in");
-            		if(finish==1){
+            		if(finish==1)
+            		{
             			tree_stack.add(hash); 
             			String tree_relation="";
             			for(int k=0; k<tree_stack.size();k++)
             			{
             				 HashMap hash2 = (HashMap)tree_stack.get(k);
             				 tree_relation = tree_relation + "." + hash2.get("EID");
-            				 if(k == tree_stack.size()-1 && k > 0){
+            				 if(k == tree_stack.size()-1 && k > 0)
+            				 {
             					 hash2 = (HashMap)tree_stack.get(k-1);
             					 father= Integer.parseInt(hash2.get("EID").toString());
             				 }
-                    	 	 }
+                    	 }
             			 //System.out.println(tree_relation);
             			 String sql3="select  * from `"+resutlttable+"` where rank='"+rank+"' and eid='"+eid+"' and father='"+father+"'";
             			 //System.out.println(sql3);
@@ -430,7 +443,8 @@ public class exp_manage extends HttpServlet{
             				 //System.out.println(insertsql);
             				 db.executeUpdate(insertsql);
             			 }
-            		 }else if(finish==2){
+            		 }
+            		else if(finish==2){
             			 double time_dev=0;
                  		 HashMap hash_stack=(HashMap)tree_stack.get(tree_stack.size()-1);
                  		 double time2=Double.parseDouble(hash.get("TIME").toString());
@@ -442,9 +456,9 @@ public class exp_manage extends HttpServlet{
                  		 hash_stack = (HashMap)list3.get(0);
                  		 count = Integer.parseInt(hash_stack.get("COUNT").toString())+1;
                  		 String insertsql="update `"+resutlttable+"` set time='"+time_dev+"',count='"+count+"' where rank='"+ rank +"' and eid='"+eid+"'";
-                    	 	//System.out.println(insertsql);
-                     	 	db.executeUpdate(insertsql);	
-                     	 	tree_stack.remove(tree_stack.size()-1);
+
+                 	 	db.executeUpdate(insertsql);	
+                 	 	tree_stack.remove(tree_stack.size()-1);
             		 }
             	 }
              }
@@ -496,8 +510,6 @@ public class exp_manage extends HttpServlet{
 		DBManager dbm = new DBManager ();
 		String sql = "delete from maintable where name='"+exp_name+"'";
 		dbm.executeUpdate(sql);
-		//sql = "drop table if exists "+exp_name;
-		//dbm.executeUpdate(sql);
 		
 		dbm.executeUpdate("drop table if exists `"+exp_name+"_classify");
 		dbm.executeUpdate("drop table if exists `"+exp_name+"_comm");
